@@ -42,7 +42,7 @@ clean:
 	$(MAKE) clean -e -C util_chip_id
 	$(MAKE) clean -e -C util_boot
 	$(MAKE) clean -e -C util_spectral_scan
-	$(MAKE) clean -e -C util_loraxhalow
+	$(MAKE) clean -e -C util_loraxhalow 
 
 install:
 	$(MAKE) install -e -C libloragw
