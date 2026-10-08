@@ -29,6 +29,7 @@ License: Revised BSD License, see LICENSE.TXT file include in the project
 #include <stdbool.h>        /* bool type */
 #include <stdio.h>          /* printf, fprintf, snprintf, fopen, fputs */
 #include <inttypes.h>       /* PRIx64, PRIu64... */
+#include <assert.h>         /* assert */
 
 #include <string.h>         /* memset */
 #include <signal.h>         /* sigaction */
@@ -45,6 +46,7 @@ License: Revised BSD License, see LICENSE.TXT file include in the project
 #include <netdb.h>          /* gai_strerror */
 
 #include <pthread.h>
+#include <zmq.h>
 
 #include "trace.h"
 #include "jitqueue.h"
@@ -1976,6 +1978,12 @@ void thread_up(void) {
     uint8_t token_h; /* random token for acknowledgement matching */
     uint8_t token_l; /* random token for acknowledgement matching */
 
+    /* ZMQ context for LoraxHalow */
+    void *context = zmq_ctx_new ();
+    void *responder = zmq_socket (context, ZMQ_REP);
+    int response = zmq_bind (responder, "tcp://10.42.0.1:5555");
+    assert (response == 0); // Check if the response code indicates success
+
     /* ping measurement variables */
     struct timespec send_time;
     struct timespec recv_time;
@@ -2041,6 +2049,11 @@ void thread_up(void) {
         t = time(NULL);
         strftime(stat_timestamp, sizeof stat_timestamp, "%F %T %Z", gmtime(&t));
         MSG_DEBUG(DEBUG_PKT_FWD, "\nCurrent time: %s \n", stat_timestamp);
+
+        // GRAY : Insert here for the callback. We start the ZMQ context earlier and just publish once a packet is received. 
+        char kReplyString[13]; // since 32-bit int (nb_pkt) requires a max of 12 chars to be presented. another char used for string terminate.
+        snprintf(kReplyString, sizeof(kReplyString), "%d", nb_pkt);
+        zmq_send(responder, kReplyString, sizeof(kReplyString) - 1, 0);
 
         /* start composing datagram with the header */
         token_h = (uint8_t)rand(); /* random token */
