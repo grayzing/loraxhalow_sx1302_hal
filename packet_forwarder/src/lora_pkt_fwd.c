@@ -1980,9 +1980,8 @@ void thread_up(void) {
 
     /* ZMQ context for LoraxHalow */
     void *context = zmq_ctx_new ();
-    void *responder = zmq_socket (context, ZMQ_REP);
-    int response = zmq_bind (responder, "tcp://10.42.0.1:5555");
-    assert (response == 0); // Check if the response code indicates success
+    void *requester = zmq_socket (context, ZMQ_REQ);
+    zmq_connect (requester, "tcp://10.13.156.243:5000");
 
     /* ping measurement variables */
     struct timespec send_time;
@@ -2049,11 +2048,6 @@ void thread_up(void) {
         t = time(NULL);
         strftime(stat_timestamp, sizeof stat_timestamp, "%F %T %Z", gmtime(&t));
         MSG_DEBUG(DEBUG_PKT_FWD, "\nCurrent time: %s \n", stat_timestamp);
-
-        // GRAY : Insert here for the callback. We start the ZMQ context earlier and just publish once a packet is received. 
-        char kReplyString[13]; // since 32-bit int (nb_pkt) requires a max of 12 chars to be presented. another char used for string terminate.
-        snprintf(kReplyString, sizeof(kReplyString), "%d", nb_pkt);
-        zmq_send(responder, kReplyString, sizeof(kReplyString) - 1, 0);
 
         /* start composing datagram with the header */
         token_h = (uint8_t)rand(); /* random token */
@@ -2398,6 +2392,11 @@ void thread_up(void) {
                             nb_pkt_received_ref[k] += 1;
                         }
                 }
+
+                // GRAY : Insert here for the callback. We start the ZMQ context earlier and just send once a packet is received. 
+                char kReplyString[13]; // since 32-bit int (nb_pkt) requires a max of 12 chars to be presented. another char used for string terminate.
+                snprintf(kReplyString, sizeof(kReplyString), "%d", nb_pkt);
+                zmq_send (requester, kReplyString, 13, 0);
             } else if (p->modulation == MOD_FSK) {
                 nb_pkt_log[p->if_chain][0] += 1;
                 nb_pkt_received_fsk += 1;
