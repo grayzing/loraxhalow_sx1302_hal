@@ -1981,7 +1981,7 @@ void thread_up(void) {
     /* ZMQ context for LoraxHalow */
     void *context = zmq_ctx_new ();
     void *requester = zmq_socket (context, ZMQ_REQ);
-    zmq_connect (requester, "tcp://10.13.156.243:5000");
+    zmq_connect (requester, "ipc://10.13.156.243:5000");
 
     /* ping measurement variables */
     struct timespec send_time;
@@ -2392,11 +2392,6 @@ void thread_up(void) {
                             nb_pkt_received_ref[k] += 1;
                         }
                 }
-
-                // GRAY : Insert here for the callback. We start the ZMQ context earlier and just send once a packet is received. 
-                char kReplyString[13]; // since 32-bit int (nb_pkt) requires a max of 12 chars to be presented. another char used for string terminate.
-                snprintf(kReplyString, sizeof(kReplyString), "%d", nb_pkt);
-                zmq_send (requester, kReplyString, 13, 0);
             } else if (p->modulation == MOD_FSK) {
                 nb_pkt_log[p->if_chain][0] += 1;
                 nb_pkt_received_fsk += 1;
@@ -2471,6 +2466,9 @@ void thread_up(void) {
         pthread_mutex_lock(&mx_meas_up);
         meas_up_dgram_sent += 1;
         meas_up_network_byte += buff_index;
+
+        //GRAY : Also just send the JSON datagram to the local server via IPC. 
+        zmq_send (requester, buff_up, buff_index, 0);
 
         /* wait for acknowledge (in 2 times, to catch extra packets) */
         for (i=0; i<2; ++i) {
