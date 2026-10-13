@@ -1980,8 +1980,8 @@ void thread_up(void) {
 
     /* ZMQ context for LoraxHalow */
     void *context = zmq_ctx_new ();
-    void *requester = zmq_socket (context, ZMQ_REQ);
-    zmq_connect (requester, "ipc://10.13.156.243:5000");
+    void *requester = zmq_socket (context, ZMQ_PUSH);
+    zmq_connect (requester, "ipc:///tmp/loraxhalow.ipc");
 
     /* ping measurement variables */
     struct timespec send_time;
@@ -2468,7 +2468,7 @@ void thread_up(void) {
         meas_up_network_byte += buff_index;
 
         //GRAY : Also just send the JSON datagram to the local server via IPC. 
-        zmq_send (requester, buff_up, buff_index, 0);
+        zmq_send (requester, buff_up + 12, buff_index - 12, 0);
 
         /* wait for acknowledge (in 2 times, to catch extra packets) */
         for (i=0; i<2; ++i) {
